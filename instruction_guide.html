@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 맞춤 지침 만들기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Gowun+Dodum&display=swap');
+
+  :root {
+    --bg: #FFF8F0;
+    --card: #FFFFFF;
+    --primary: #FF6B35;
+    --primary-light: #FFE8DF;
+    --secondary: #2D6A4F;
+    --secondary-light: #D8F3DC;
+    --accent: #F4A261;
+    --text: #1A1A2E;
+    --text-soft: #5A5A7A;
+    --border: #E8DDD5;
+    --shadow: rgba(255, 107, 53, 0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 120%;
+  }
+
+  /* HERO */
+  .hero {
+    background: linear-gradient(135deg, #FF6B35 0%, #F4A261 50%, #FFBE76 100%);
+    padding: 60px 24px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 70% 30%, rgba(255,255,255,0.18) 0%, transparent 60%);
+  }
+  .hero-emoji {
+    font-size: 64px;
+    display: block;
+    margin-bottom: 16px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .hero h1 {
+    font-size: clamp(24px, 5vw, 40px);
+    font-weight: 900;
+    color: white;
+    line-height: 1.3;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .hero p {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: rgba(255,255,255,0.92);
+    font-family: 'Gowun Dodum', sans-serif;
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.8;
+    position: relative;
+  }
+
+  /* MAIN */
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+  }
+
+  /* STEP */
+  .step-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .step-card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+    border: 1.5px solid var(--border);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .step-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px var(--shadow);
+  }
+
+  .step-num {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary);
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+
+  .step-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .step-desc {
+    font-size: 14px;
+    color: var(--text-soft);
+    line-height: 1.8;
+    font-family: 'Gowun Dodum', sans-serif;
+    margin-bottom: 20px;
+  }
+
+  /* USER TYPE GRID */
+  .user-type-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+  .user-type-btn {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 16px 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+  .user-type-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+  }
+  .user-type-btn.active {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 0 0 3px rgba(255,107,53,0.18);
+  }
+  .user-type-btn .icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .user-type-btn .label { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  /* OPTIONS */
+  .option-group {
+    margin-bottom: 20px;
+  }
+  .option-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .option-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .chip {
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 40px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text-soft);
+    font-weight: 500;
+  }
+  .chip:hover { border-color: var(--primary); color: var(--primary); }
+  .chip.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    font-weight: 600;
+  }
+
+  /* RESULT */
+  .result-box {
+    background: linear-gradient(135deg, #1A1A2E, #2D2D4E);
+    border-radius: 20px;
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-box::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,107,53,0.15);
+  }
+  .result-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .result-text {
+    font-family: 'Gowun Dodum', sans-serif;
+    font-size: 14px;
+    line-height: 2;
+    color: rgba(255,255,255,0.9);
+    white-space: pre-line;
+    position: relative;
+  }
+  .copy-btn {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+    padding: 14px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Noto Sans KR', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .copy-btn:hover { background: #e05a28; transform: translateY(-1px); }
+  .copy-btn:active { transform: translateY(0); }
+  .copy-btn.copied { background: var(--secondary); }
+
+  /* INFO BOX */
+  .info-box {
+    background: var(--secondary-light);
+    border-left: 4px solid var(--secondary);
+    border-radius: 0 12px 12px 0;
+    padding: 16px 20px;
+    margin-top: 16px;
+    font-size: 13px;
+    color: #1B4332;
+    line-height: 1.8;
+    font-family: 'Gowun Dodum', sans-serif;
+  }
+  .info-box strong { font-weight: 700; display: block; margin-bottom: 4px; }
+
+  /* HOW TO */
+  .how-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+  }
+  .how-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--bg);
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+  }
+  .how-num {
+    width: 28px; height: 28px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .how-text { font-size: 13px; line-height: 1.7; font-family: 'Gowun Dodum', sans-serif; color: var(--text); }
+  .how-text strong { font-weight: 700; color: var(--primary); }
+
+  /* DISCUSSION SECTION */
+  .discussion-card {
+    background: linear-gradient(135deg, var(--secondary-light), #B7E4C7);
+    border-radius: 24px;
+    padding: 32px;
+    border: 1.5px solid #95D5B2;
+  }
+  .discussion-title {
+    font-size: 18px; font-weight: 700;
+    margin-bottom: 20px;
+    color: #1B4332;
+  }
+  .discussion-item {
+    background: white;
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--secondary);
+  }
+  .discussion-q {
+    font-size: 14px; font-weight: 700; color: var(--secondary);
+    margin-bottom: 8px;
+  }
+  .discussion-a {
+    font-size: 13px; line-height: 1.8; color: #2D3748;
+    font-family: 'Gowun Dodum', sans-serif;
+  }
+
+  /* PROMPT SECTION */
+  .prompt-card {
+    background: var(--card);
+    border-radius: 24px;
+    padding: 32px;
+    box-shadow: 0 4px 24px var(--shadow);
+    border: 1.5px solid var(--border);
+  }
+  .prompt-inner {
+    background: #F7F3FF;
+    border: 2px dashed #9B72CF;
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 16px;
+  }
+  .prompt-inner h4 {
+    font-size: 14px; font-weight: 700; color: #6B3FA0;
+    margin-bottom: 12px;
+  }
+  .prompt-inner p {
+    font-size: 13px; line-height: 2; color: #3D2B5E;
+    font-family: 'Gowun Dodum', sans-serif;
+    white-space: pre-line;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .section-header .badge {
+    display: inline-block;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+  }
+  .section-header h2 {
+    font-size: clamp(18px, 3vw, 24px);
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .section-header p {
+    font-size: 14px; color: var(--text-soft);
+    font-family: 'Gowun Dodum', sans-serif;
+    line-height: 1.7;
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 8px 0;
+  }
+
+  @media (max-width: 480px) {
+    .step-card, .discussion-card, .prompt-card { padding: 20px; }
+    .user-type-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="hero-emoji">🤝</span>
+  <h1>AI, 나에게 맞게 설정하기<br>맞춤 지침 작성 도우미</h1>
+  <p>디지털 초보자를 위한<br>생성형 AI 맞춤 지침 만들기 가이드</p>
+</div>
+
+<div class="container">
+  <div class="step-wrap">
+
+    <!-- STEP 1: 맞춤 지침이란? -->
+    <div class="step-card">
+      <span class="step-num">💡 먼저 알아볼게요</span>
+      <div class="step-title">맞춤 지침이 뭔가요?</div>
+      <p class="step-desc">AI에게 미리 "나는 이런 사람이에요, 이렇게 도와주세요"라고 알려두는 설정이에요.<br>한 번만 입력해두면, 매번 대화할 때마다 AI가 기억하고 맞춰서 대화해줘요.</p>
+      <div class="how-steps">
+        <div class="how-step">
+          <div class="how-num">1</div>
+          <div class="how-text"><strong>예시 없이 AI한테 물어볼 때 →</strong> "안녕하세요, 오늘 날씨가 어떤가요?" 라고 물으면 딱딱하고 어려운 말로 대답할 수 있어요</div>
+        </div>
+        <div class="how-step">
+          <div class="how-num">2</div>
+          <div class="how-text"><strong>맞춤 지침을 설정한 후 →</strong> AI가 "쉬운 말로, 천천히, 짧게" 대답하도록 미리 알려줄 수 있어요 😊</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상세 설정 -->
+    <div class="step-card" id="detailCard">
+      <span class="step-num">✍️ 맞춤 설정</span>
+      <div class="step-title">어떻게 말해주길 원하나요?</div>
+      <p class="step-desc">AI가 나한테 맞게 대답할 수 있도록 원하는 것을 골라주세요 (여러 개 골라도 돼요)</p>
+
+      <div class="option-group">
+        <div class="option-label">💬 말투 <span style="font-size:11px;font-weight:400;color:var(--text-soft);">· 하나만 선택해요</span></div>
+        <div class="option-chips" id="toneChips">
+          <button class="chip" onclick="selectOne(this, 'tone', '반말로 편하게 대화해줘. 친근하고 정서적인 지지가 느껴지는 다정한 친구처럼 말해줘.')">🤗 다정한 친구</button>
+          <button class="chip" onclick="selectOne(this, 'tone', '존댓말로 차근차근 원리를 설명해줘. 잘하고 있다고 격려해주는 친절한 선생님처럼 말해줘.')">📖 친절한 선생님</button>
+          <button class="chip" onclick="selectOne(this, 'tone', '불필요한 말 없이 정보만 전달해줘. \'~하세요\', \'입니다\'처럼 명확하게 끝맺어줘.')">🗂️ 간결한 안내원</button>
+          <button class="chip" onclick="selectOne(this, 'tone', '존댓말로 존중해주는 느낌으로, 격식을 갖춰 예의바른 비서처럼 말해줘.')">🎩 예의바른 비서</button>
+        </div>
+      </div>
+
+      <div class="option-group">
+        <div class="option-label">📖 단어 수준 <span style="font-size:11px;font-weight:400;color:var(--text-soft);">· 하나만 선택해요</span></div>
+        <div class="option-chips" id="vocabChips">
+          <button class="chip" onclick="selectOne(this, 'vocab', '가장 직관적이고 쉬운 단어를 사용해서 설명해줘.')">🟢 아주 쉽게</button>
+          <button class="chip" onclick="selectOne(this, 'vocab', '어려운 용어가 나오면 일상적인 단어로 풀어서 설명해줘.')">🔍 어려운 말은 풀어서</button>
+          <button class="chip" onclick="selectOne(this, 'vocab', '뉴스나 신문 수준의 단어로 설명해줘.')">📰 보통</button>
+        </div>
+      </div>
+
+      <div class="option-group">
+        <div class="option-label">📏 대답 형식</div>
+        <div class="option-chips" id="lengthChips">
+          <button class="chip" onclick="toggleChip(this, 'length', '대답은 짧고 간단하게, 핵심만 말해줘.')">✂️ 짧게</button>
+          <button class="chip" onclick="toggleChip(this, 'length', '한 번에 하나씩, 단계별로 나눠서 설명해줘.')">🪜 단계별로</button>
+          <button class="chip" onclick="toggleChip(this, 'length', '이모지를 사용해서 읽기 쉽게 해줘.')">😊 이모지 사용</button>
+          <button class="chip" onclick="toggleChip(this, 'length', '긴 내용은 번호나 목록으로 정리해줘.')">📋 번호·목록으로</button>
+        </div>
+      </div>
+
+      <div class="option-group">
+        <div class="option-label">🤝 태도·배려</div>
+        <div class="option-chips" id="attitudeChips">
+          <button class="chip" onclick="toggleChip(this, 'attitude', '내가 틀리거나 잘못 이해했을 때 지적하지 말고, 부드럽게 다시 안내해줘.')">💛 부드럽게 다시 안내</button>
+          <button class="chip" onclick="toggleChip(this, 'attitude', '중요한 내용은 한 번 더 짚어줘.')">🔁 중요한 건 반복</button>
+          <button class="chip" onclick="toggleChip(this, 'attitude', '어려운 내용은 실생활 예시를 들어서 설명해줘.')">💡 예시로 설명</button>
+          <button class="chip" onclick="toggleChip(this, 'attitude', '내 질문이 너무 막연하거나 구체적이지 않으면, 내가 정말 원하는 정보를 찾을 수 있도록 질문을 더 구체화하는 방법을 안내해줘.')">🎯 질문 구체화 도움</button>
+          <button class="chip" onclick="toggleChip(this, 'attitude', '중요한 설명이 끝나면 \"이해되셨나요?\" 또는 \"더 궁금한 게 있나요?\"라고 한 번 물어봐줘.')">✅ 이해 확인</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- STEP 4: 결과 -->
+    <div class="step-card" id="resultCard" style="display:none">
+      <span class="step-num">🎉 완성!</span>
+      <div class="step-title">내 맞춤 지침이 만들어졌어요</div>
+      <p class="step-desc">아래 내용을 복사해서 AI의 '맞춤 지침' 설정 칸에 붙여넣기 해주세요</p>
+
+      <div class="result-box">
+        <div class="result-label">📋 맞춤 지침 내용</div>
+        <div class="result-text" id="resultText"></div>
+        <button class="copy-btn" id="copyBtn" onclick="copyResult()">📋 복사하기</button>
+      </div>
+
+      <div class="info-box">
+        <strong>💡 이걸 어디에 넣으면 되나요?</strong>
+        Claude(클로드) 앱: 화면 오른쪽 위 이름 클릭 → '설정' → '맞춤화' → '맞춤 지침' 칸에 붙여넣기<br>
+        ChatGPT: 화면 왼쪽 아래 이름 클릭 → '맞춤 지침' → 첫 번째 칸에 붙여넣기
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 논의 가이드 -->
+    <div class="section-header">
+      <span class="badge">💬 논의 가이드</span>
+      <h2>이런 점들을 함께 이야기해보세요</h2>
+      <p>맞춤 지침을 설정할 때 나눌 수 있는 핵심 질문들이에요</p>
+    </div>
+
+    <div class="discussion-card">
+      <div class="discussion-title">🗣️ 함께 논의해볼 질문들</div>
+
+      <div class="discussion-item">
+        <div class="discussion-q">Q1. 어떤 말투가 편해요?</div>
+        <div class="discussion-a">친구처럼 반말로 편하게 말해주는 게 좋은지, 선생님처럼 차근차근 설명해주는 게 좋은지, 아니면 딱딱하지 않게 정중하게 말해주는 게 좋은지 물어보세요. 평소 어떤 사람과 대화할 때 편한지 떠올려보면 도움이 돼요.</div>
+      </div>
+      <div class="discussion-item">
+        <div class="discussion-q">Q2. 어려운 말이 나오면 어떻게 해줬으면 해요?</div>
+        <div class="discussion-a">아주 쉬운 단어로만 말해줬으면 하는지, 어려운 말이 나올 때만 풀어서 설명해줬으면 하는지, 아니면 그냥 보통 수준으로 말해줘도 괜찮은지 확인해보세요.</div>
+      </div>
+      <div class="discussion-item">
+        <div class="discussion-q">Q3. 대답은 어떻게 보여줬으면 해요?</div>
+        <div class="discussion-a">짧고 간단하게 핵심만 말해줬으면 하는지, 번호나 목록으로 보기 좋게 정리해줬으면 하는지, 한 번에 하나씩 단계별로 설명해줬으면 하는지 이야기해보세요. 이모지(그림 글자)가 있으면 읽기 편한지도 물어보세요.</div>
+      </div>
+      <div class="discussion-item">
+        <div class="discussion-q">Q4. AI가 어떻게 도와줬으면 해요?</div>
+        <div class="discussion-a">틀렸을 때 부드럽게 다시 알려줬으면 하는지, 중요한 건 한 번 더 말해줬으면 하는지, 예시를 들어 설명해줬으면 하는지, 질문이 막막할 때 어떻게 물어볼지 안내해줬으면 하는지 확인해보세요.</div>
+      </div>
+      <div class="discussion-item">
+        <div class="discussion-q">Q5. AI가 틀릴 수도 있다는 거 알고 있어요?</div>
+        <div class="discussion-a">AI는 가끔 잘못된 정보를 줄 수 있어요. 건강, 돈, 법 같은 중요한 문제는 반드시 전문가에게 다시 확인해야 해요. 이 점을 꼭 함께 이야기해두세요.</div>
+      </div>
+      <div class="discussion-item">
+        <div class="discussion-q">Q6. 개인 정보는 절대 입력하지 않기로 약속해요</div>
+        <div class="discussion-a">전화번호, 주민번호, 아이디·비밀번호, 집 주소, 통장 번호는 AI에게 절대 알려주지 않기로 미리 약속해요. AI가 막아주기도 하지만, 사용자 스스로 인식하는 게 가장 중요해요.</div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin: 8px 0 24px;"></div>
+
+    <!-- 상황별 첫 마디 예시 -->
+    <div class="section-header">
+      <span class="badge" style="background:#FFF0E0;color:#C05324;">💬 이렇게 말해봐요</span>
+      <h2>상황별 첫 마디 예시</h2>
+      <p>맞춤 지침을 설정한 다음, AI에게 어떻게 말을 걸면 될까요?<br>이런 식으로 시작해보세요!</p>
+    </div>
+
+    <div class="prompt-card">
+      <div class="step-title">📱 일상생활</div>
+      <div class="prompt-inner" style="background:#FFF8F0; border-color:#FF6B35; margin-bottom:12px;">
+        <h4 style="color:#C05324;">🍳 요리·음식이 궁금할 때</h4>
+        <p>"김치찌개 어떻게 만들어? 재료랑 순서 알려줘."
+"냉장고에 두부랑 달걀이 있어. 뭐 만들 수 있어?"</p>
+      </div>
+      <div class="prompt-inner" style="background:#FFF8F0; border-color:#FF6B35; margin-bottom:12px;">
+        <h4 style="color:#C05324;">🌤️ 날씨·옷차림이 궁금할 때</h4>
+        <p>"내일 비 와? 뭐 입으면 좋아?"
+"요즘 낮이랑 밤 기온 차이가 큰데 어떻게 입어야 해?"</p>
+      </div>
+      <div class="prompt-inner" style="background:#FFF8F0; border-color:#FF6B35; margin-bottom:12px;">
+        <h4 style="color:#C05324;">🎮 취미·여가가 필요할 때</h4>
+        <p>"혼자 할 수 있는 재미있는 취미 뭐 있어?"
+"유튜브 말고 심심할 때 뭐 하면 좋아?"</p>
+      </div>
+      <div class="prompt-inner" style="background:#FFF8F0; border-color:#FF6B35; margin-bottom:24px;">
+        <h4 style="color:#C05324;">🧹 집안일·생활 꿀팁이 필요할 때</h4>
+        <p>"세탁기 청소 어떻게 해?"
+"냄비에 탄 거 쉽게 닦는 방법 있어?"</p>
+      </div>
+
+      <div class="step-title">💬 소통·감정</div>
+      <div class="prompt-inner" style="background:#F0FFF4; border-color:#2D6A4F; margin-bottom:12px;">
+        <h4 style="color:#1B4332;">😤 감정·고민을 털어놓고 싶을 때</h4>
+        <p>"오늘 너무 힘들었어, 들어줄 수 있어?"
+"요즘 자꾸 기분이 처지는데 어떻게 하면 좋을까?"</p>
+      </div>
+      <div class="prompt-inner" style="background:#F0FFF4; border-color:#2D6A4F; margin-bottom:24px;">
+        <h4 style="color:#1B4332;">🎁 선물·축하 문구가 필요할 때</h4>
+        <p>"친구 생일에 뭐라고 말하면 좋아?"
+"부모님 결혼기념일 축하 문자 대신 써줘."</p>
+      </div>
+
+      <div class="step-title">✍️ 글쓰기·정보</div>
+      <div class="prompt-inner" style="background:#F7F3FF; border-color:#9B72CF; margin-bottom:12px;">
+        <h4 style="color:#6B3FA0;">💌 문자·메시지를 써야 할 때</h4>
+        <p>"딸한테 생일 축하 문자 어떻게 쓰면 좋아?"
+"이웃한테 층간소음 양해 문자 대신 써줘."</p>
+      </div>
+      <div class="prompt-inner" style="background:#F7F3FF; border-color:#9B72CF; margin-bottom:12px;">
+        <h4 style="color:#6B3FA0;">📖 단어·뜻을 모를 때</h4>
+        <p>"'디지털 전환'이 무슨 말이야? 쉽게 설명해줘."
+"뉴스에서 '추경'이라고 하던데 무슨 뜻이야?"</p>
+      </div>
+      <div class="prompt-inner" style="background:#F7F3FF; border-color:#9B72CF;">
+        <h4 style="color:#6B3FA0;">📱 스마트폰·앱이 어려울 때</h4>
+        <p>"카카오톡에서 사진 보내는 방법 알려줘."
+"유튜브에서 원하는 영상 찾는 방법이 뭐야?"</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const selectedOptions = {
+    tone: { value: null }, vocab: { value: null },
+    length: new Set(), attitude: new Set()
+  };
+
+  // 단일 선택 (말투, 단어 수준)
+  function selectOne(chip, group, value) {
+    const container = chip.parentElement;
+    container.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    if (selectedOptions[group].value === value) {
+      selectedOptions[group].value = null;
+    } else {
+      chip.classList.add('active');
+      selectedOptions[group].value = value;
+    }
+    updateResult();
+  }
+
+  // 다중 선택 (대답 길이, 태도)
+  function toggleChip(chip, group, value) {
+    chip.classList.toggle('active');
+    if (selectedOptions[group].has(value)) selectedOptions[group].delete(value);
+    else selectedOptions[group].add(value);
+    updateResult();
+  }
+
+  function updateResult() {
+    const tone = selectedOptions.tone.value;
+    const vocab = selectedOptions.vocab.value;
+
+    // 말투+단어 수준을 한 문장으로 합치기
+    let combinedLine = null;
+    if (tone && vocab) {
+      // 말투 문장 끝 마침표 제거 후 단어 수준과 연결
+      const toneBase = tone.replace(/\.$/, '');
+      const vocabBase = vocab.replace(/\.$/, '');
+      combinedLine = `${toneBase}. 또한 ${vocabBase}.`;
+    } else if (tone) {
+      combinedLine = tone;
+    } else if (vocab) {
+      combinedLine = vocab;
+    }
+
+    const allOpts = [
+      combinedLine,
+      ...selectedOptions.length,
+      ...selectedOptions.attitude
+    ].filter(Boolean);
+
+    const resultCard = document.getElementById('resultCard');
+    if (allOpts.length === 0) { resultCard.style.display = 'none'; return; }
+    resultCard.style.display = 'block';
+
+    let lines = [...allOpts];
+    lines.push("복잡한 의사결정이 필요할 땐 단계별로 필요한 정보와 가장 좋은 2~3개의 선택지를 주세요.");
+    lines.push("모르거나 확실하지 않은 내용은 솔직하게 말하고, 어디서 확인할 수 있는지 알려줘.");
+    lines.push("개인정보(전화번호, 주민번호, 아이디와 비밀번호 등)을 입력하거나 위험한 행동을 하면 막아주고, 내가 대처할 수 있는 행동을 명확하게 알려주세요.");
+    lines.push("다양한 상황에서 AI를 안전하고 똑똑하게 사용할 수 있도록 대화를 이끌어주세요.");
+
+    document.getElementById('resultText').textContent = lines.join('\n\n');
+  }
+
+  function copyResult() {
+    const text = document.getElementById('resultText').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '✅ 복사됐어요!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '📋 복사하기';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+</script>
+</body>
+</html>
